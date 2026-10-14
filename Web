@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Student Result Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f5;--grid:#d6dee6;--surface:#fff;--ink:#16253b;--muted:#5a6b80;--line:#c4cfdb;--pass:#13805a;--fail:#c8283f;--mark:#ffe14d;--soft:#f5f8fa;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1623;--grid:#192536;--surface:#152133;--ink:#e8eef6;--muted:#9bacc0;--line:#2b3b52;--pass:#3ccf98;--fail:#ff6b7f;--mark:#c9a800;--soft:#101b2b}}
+:root[data-theme="dark"]{--bg:#0e1623;--grid:#192536;--surface:#152133;--ink:#e8eef6;--muted:#9bacc0;--line:#2b3b52;--pass:#3ccf98;--fail:#ff6b7f;--mark:#c9a800;--soft:#101b2b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Source Sans 3",system-ui,sans-serif;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px 40px}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0;line-height:1.15}
+h1{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:800;letter-spacing:-.02em;padding:34px 0 6px}
+h2{font-size:1.3rem;margin-bottom:10px}
+.sub{color:var(--muted);margin:0 0 18px;max-width:64ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi b{display:block;font:800 1.7rem "Bricolage Grotesque",sans-serif}
+.kpi span{font-size:.85rem;color:var(--muted)}
+.dist{display:flex;gap:6px;align-items:flex-end;height:44px;margin-top:4px}
+.dist div{flex:1;text-align:center;font-size:.7rem;color:var(--muted)}
+.dist i{display:block;background:var(--ink);min-height:2px;border-radius:2px 2px 0 0;margin-bottom:2px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+input[type=text],input[type=search]{font:inherit;padding:8px 10px;border:2px solid var(--ink);border-radius:7px;background:var(--surface);color:var(--ink);min-width:0}
+button{font:600 .92rem "Source Sans 3",sans-serif;padding:8px 14px;border-radius:7px;border:2px solid var(--ink);background:var(--surface);color:var(--ink);cursor:pointer}
+button.primary{background:var(--ink);color:var(--bg)}
+button:hover{background:var(--mark);color:#16253b;border-color:#16253b}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+.sp{flex:1}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:760px;background:var(--surface)}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+th{background:var(--soft);font-size:.85rem}
+th:nth-child(2),td:nth-child(2){text-align:left}
+td input{width:58px;text-align:center;font:600 1rem "Source Sans 3",sans-serif;padding:5px 2px;border:1.5px solid var(--line);border-radius:5px;background:var(--surface);color:var(--ink)}
+td input[aria-invalid=true]{border-color:var(--fail);background:color-mix(in srgb,var(--fail) 12%,transparent)}
+td input.low{color:var(--fail)}
+.nm{background:none;border:0;padding:0;font:600 1rem "Source Sans 3",sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer;color:var(--ink)}
+.nm:hover{background:var(--mark)}
+.id{font-size:.75rem;color:var(--muted);display:block;text-align:left}
+.x{border:0;padding:2px 6px;font-size:1rem;color:var(--muted)}
+.p{color:var(--pass);font-weight:700}.f{color:var(--fail);font-weight:700}.i{color:var(--muted)}
+tfoot td{background:var(--soft);font-weight:600;font-size:.9rem}
+.empty{padding:26px;text-align:center;color:var(--muted)}
+.rc{border:2px solid var(--ink)}
+.rc h2{font-size:1.5rem}
+.rcgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:700px){.rcgrid{grid-template-columns:1fr}}
+.row{display:grid;grid-template-columns:90px 1fr 36px;gap:8px;align-items:center;margin:6px 0}
+.row .b{height:14px;background:var(--soft);border:1px solid var(--line);border-radius:3px;position:relative}
+.row .b i{display:block;height:100%;background:var(--pass)}
+.row .b i.f{background:var(--fail)}
+.row .b::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;border-left:1px dotted var(--muted)}
+.big{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.big div{border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+.big b{font:800 1.4rem "Bricolage Grotesque",sans-serif;display:block}
+.big span{font-size:.8rem;color:var(--muted)}
+.note{font-size:.85rem;color:var(--muted)}
+#toast{min-height:1.4em;font-weight:600;margin:0 0 8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Student Result Management System</h1>
+<p class="sub">Add students, type marks into the grid, and totals, averages, grades, pass or fail status and class ranking update instantly. Marks are kept in a list per student, one slot per subject.</p>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="card">
+  <div class="tools">
+    <input type="text" id="newName" placeholder="Student name" aria-label="New student name" maxlength="40">
+    <button class="primary" id="addSt">Add student</button>
+    <span class="sp"></span>
+    <input type="text" id="newSub" placeholder="New subject" aria-label="New subject name" maxlength="20">
+    <button id="addSub">Add subject</button>
+  </div>
+  <div class="tools">
+    <input type="search" id="q" placeholder="Search by name or ID" aria-label="Search students">
+    <span class="sp"></span>
+    <button id="sample">Load sample class</button>
+    <button id="csv">Copy as CSV</button>
+    <button id="reset">Clear all</button>
+  </div>
+  <p id="toast" role="status" aria-live="polite"></p>
+  <div class="scroll"><table id="tbl"></table></div>
+  <p class="note">Marks are whole numbers from 0 to 100. Pass means an average of 50 or more across all subjects. Grades: A 80+, B 70+, C 60+, D 50+, F below 50. Ranks appear once a student has every mark. Data is saved in this browser only.</p>
+</div>
+
+<div class="card rc" id="card" hidden></div>
+</div>
+
+<script>
+(function(){
+var KEY='srms-v1',S={subjects:['Math','English','Science','History','ICT'],students:[],next:1};
+var $=function(id){return document.getElementById(id)};
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function load(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.subjects&&d.students)S=d}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function toast(t){$('toast').textContent=t}
+function grade(a){return a>=80?'A':a>=70?'B':a>=60?'C':a>=50?'D':'F'}
+function calc(st){
+  var t=0,n=0;
+  for(var i=0;i<S.subjects.length;i++){if(st.marks[i]!==null&&st.marks[i]!==undefined){t+=st.marks[i];n++}}
+  var avg=n?t/n:null;
+  return{total:t,avg:avg,n:n,done:n===S.subjects.length&&n>0};
+}
+function render(){
+  var h='<thead><tr><th>#</th><th>Student</th>';
+  S.subjects.forEach(function(s,k){h+='<th>'+esc(s)+' <button class="x" data-rs="'+k+'" aria-label="Remove '+esc(s)+'">×</button></th>'});
+  h+='<th>Total</th><th>Average</th><th>Grade</th><th>Status</th><th>Rank</th><th></th></tr></thead><tbody>';
+  S.students.forEach(function(st,i){
+    h+='<tr data-i="'+i+'"><td>'+(i+1)+'</td><td><button class="nm" data-card="'+i+'">'+esc(st.name)+'</button><span class="id">'+esc(st.id)+'</span></td>';
+    S.subjects.forEach(function(s,k){var v=st.marks[k];h+='<td><input inputmode="numeric" maxlength="3" data-k="'+k+'" value="'+(v===null||v===undefined?'':v)+'" aria-label="'+esc(st.name)+' '+esc(s)+'"></td>'});
+    h+='<td class="tot"></td><td class="avg"></td><td class="gr"></td><td class="st"></td><td class="rk"></td><td><button class="x" data-del="'+i+'" aria-label="Remove '+esc(st.name)+'">🗑</button></td></tr>';
+  });
+  h+='</tbody>';
+  if(!S.students.length)h+='<tfoot><tr><td colspan="'+(S.subjects.length+8)+'" class="empty">No students yet. Add one above or load the sample class.</td></tr></tfoot>';
+  else{h+='<tfoot><tr><td></td><td style="text-align:left">Subject average</td>';
+    S.subjects.forEach(function(s,k){h+='<td class="sa" data-k="'+k+'"></td>'});
+    h+='<td colspan="6"></td></tr></tfoot>'}
+  $('tbl').innerHTML=h;refresh();filter();
+}
+function refresh(){
+  var rows=S.students.map(calc),done=[];
+  rows.forEach(function(c,i){if(c.done)done.push(i)});
+  done.sort(function(a,b){return rows[b].total-rows[a].total});
+  var rank={},r=0;
+  done.forEach(function(i,j){if(j===0||rows[i].total<rows[done[j-1]].total)r=j+1;rank[i]=r});
+  var passed=0,fin=0,dist=[0,0,0,0,0],sum=0,hi=null,lo=null;
+  var trs=$('tbl').querySelectorAll('tbody tr');
+  trs.forEach(function(tr){
+    var i=+tr.dataset.i,c=rows[i];
+    tr.querySelector('.tot').textContent=c.n?c.total:'–';
+    tr.querySelector('.avg').textContent=c.avg===null?'–':c.avg.toFixed(2);
+    var g=c.avg===null?'–':grade(c.avg);tr.querySelector('.gr').textContent=g;
+    var st=tr.querySelector('.st');
+    if(!c.done){st.textContent=c.n?'Incomplete':'No marks';st.className='st i'}
+    else if(c.avg>=50){st.textContent='Pass';st.className='st p'}else{st.textContent='Fail';st.className='st f'}
+    tr.querySelector('.rk').textContent=c.done?rank[i]:'–';
+  });
+  done.forEach(function(i){
+    fin++;sum+=rows[i].avg;if(rows[i].avg>=50)passed++;
+    dist['ABCDF'.indexOf(grade(rows[i].avg))]++;
+    if(hi===null||rows[i].total>rows[hi].total)hi=i;
+    if(lo===null||rows[i].total<rows[lo].total)lo=i;
+  });
+  $('tbl').querySelectorAll('.sa').forEach(function(td){
+    var k=+td.dataset.k,t=0,n=0;
+    S.students.forEach(function(st){if(st.marks[k]!==null&&st.marks[k]!==undefined){t+=st.marks[k];n++}});
+    td.textContent=n?(t/n).toFixed(1):'–';
+  });
+  var mx=Math.max.apply(null,dist.concat([1]));
+  $('kpis').innerHTML=
+   k(S.students.length,'Students ('+fin+' complete)')+
+   k(fin?(sum/fin).toFixed(2):'–','Class average')+
+   k(fin?Math.round(passed/fin*100)+'%':'–','Pass rate')+
+   k(hi===null?'–':rows[hi].total,'Top total'+(hi===null?'':': '+esc(S.students[hi].name)))+
+   k(lo===null?'–':rows[lo].total,'Lowest total'+(lo===null?'':': '+esc(S.students[lo].name)))+
+   '<div class="kpi"><div class="dist">'+['A','B','C','D','F'].map(function(g,j){return '<div><i style="height:'+(dist[j]/mx*30)+'px"></i>'+g+dist[j]+'</div>'}).join('')+'</div><span>Grade spread</span></div>';
+}
+function k(v,l){return '<div class="kpi"><b>'+v+'</b><span>'+l+'</span></div>'}
+function filter(){
+  var q=$('q').value.trim().toLowerCase();
+  $('tbl').querySelectorAll('tbody tr').forEach(function(tr){
+    var st=S.students[+tr.dataset.i];
+    tr.style.display=(!q||st.name.toLowerCase().indexOf(q)>-1||st.id.toLowerCase().indexOf(q)>-1)?'':'none';
+  });
+}
+function card(i){
+  var st=S.students[i],c=calc(st),rkAll=S.students.map(calc),better=0;
+  if(c.done)rkAll.forEach(function(o){if(o.done&&o.total>c.total)better++});
+  var h='<h2>Report card: '+esc(st.name)+'</h2><p class="note">'+esc(st.id)+'</p><div class="rcgrid"><div>';
+  S.subjects.forEach(function(s,k){
+    var v=st.marks[k],has=v!==null&&v!==undefined;
+    h+='<div class="row"><span>'+esc(s)+'</span><div class="b"><i class="'+(has&&v<50?'f':'')+'" style="width:'+(has?v:0)+'%"></i></div><b>'+(has?v:'–')+'</b></div>';
+  });
+  h+='<p class="note">Dotted line marks the 50 pass line.</p></div><div><div class="big"><div><b>'+(c.n?c.total:'–')+'</b><span>Total</span></div><div><b>'+(c.avg===null?'–':c.avg.toFixed(2))+'</b><span>Average</span></div><div><b>'+(c.avg===null?'–':grade(c.avg))+'</b><span>Grade</span></div><div><b>'+(c.done?better+1:'–')+'</b><span>Class rank</span></div></div>';
+  var rem=!c.n?'No marks entered yet.':!c.done?'Marks are still missing for some subjects.':c.avg>=50?'Result: <span class="p">Pass</span>.':'Result: <span class="f">Fail</span>.';
+  if(c.n){
+    var best=0,worst=0;
+    for(var j=0;j<S.subjects.length;j++){if(st.marks[j]==null)continue;if(st.marks[best]==null||st.marks[j]>st.marks[best])best=j;if(st.marks[worst]==null||st.marks[j]<st.marks[worst])worst=j}
+    rem+=' Strongest: '+esc(S.subjects[best])+' ('+st.marks[best]+'). Needs attention: '+esc(S.subjects[worst])+' ('+st.marks[worst]+').';
+  }
+  h+='<p>'+rem+'</p></div></div><button id="closeCard">Close</button>';
+  var el=$('card');el.innerHTML=h;el.hidden=false;
+  $('closeCard').onclick=function(){el.hidden=true};
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+$('tbl').addEventListener('input',function(e){
+  var inp=e.target;if(inp.tagName!=='INPUT')return;
+  var i=+inp.closest('tr').dataset.i,k=+inp.dataset.k,v=inp.value.trim(),st=S.students[i];
+  if(v===''){st.marks[k]=null;inp.removeAttribute('aria-invalid');toast('')}
+  else if(/^\d+$/.test(v)&&+v<=100){st.marks[k]=+v;inp.removeAttribute('aria-invalid');inp.className=+v<50?'low':'';toast('')}
+  else{st.marks[k]=null;inp.setAttribute('aria-invalid','true');toast('Invalid mark. Enter a whole number from 0 to 100.')}
+  refresh();save();
+});
+$('tbl').addEventListener('click',function(e){
+  var t=e.target.closest('button');if(!t)return;
+  if(t.dataset.card!==undefined)card(+t.dataset.card);
+  if(t.dataset.del!==undefined){var d=S.students.splice(+t.dataset.del,1)[0];$('card').hidden=true;toast('Removed '+d.name+'.');render();save()}
+  if(t.dataset.rs!==undefined){var k2=+t.dataset.rs,nm=S.subjects.splice(k2,1)[0];S.students.forEach(function(s){s.marks.splice(k2,1)});$('card').hidden=true;toast('Removed subject '+nm+'.');render();save()}
+});
+function addStudent(name){
+  var m=[];for(var i=0;i<S.subjects.length;i++)m.push(null);
+  S.students.push({id:'S'+String(S.next++).padStart(3,'0'),name:name,marks:m});
+}
+$('addSt').onclick=function(){
+  var n=$('newName').value.trim();
+  if(!n){toast('Enter the student\u2019s name first.');$('newName').focus();return}
+  addStudent(n);$('newName').value='';toast('Added '+n+'. Type their marks in the grid.');render();save();
+  var r=$('tbl').querySelector('tbody tr:last-child input');if(r)r.focus();
+};
+$('newName').addEventListener('keydown',function(e){if(e.key==='Enter')$('addSt').click()});
+$('addSub').onclick=function(){
+  var n=$('newSub').value.trim();
+  if(!n){toast('Enter a subject name first.');return}
+  if(S.subjects.some(function(s){return s.toLowerCase()===n.toLowerCase()})){toast('That subject already exists.');return}
+  S.subjects.push(n);S.students.forEach(function(s){s.marks.push(null)});$('newSub').value='';toast('Added subject '+n+'.');render();save();
+};
+$('newSub').addEventListener('keydown',function(e){if(e.key==='Enter')$('addSub').click()});
+$('q').addEventListener('input',filter);
+$('sample').onclick=function(){
+  S={subjects:['Math','English','Science','History','ICT'],students:[],next:1};
+  var d=[['Amina Yusuf',[88,92,79,85,90]],['Brian Okello',[45,52,38,60,55]],['Chen Wei',[95,78,98,70,99]],['Dalia Haddad',[62,71,58,66,64]],['Emeka Obi',[33,41,47,52,39]],['Fatima Noor',[74,81,69,77,72]],['Grace Mwangi',[56,49,61,58,53]],['Hiro Tanaka',[81,67,90,73,86]]];
+  d.forEach(function(r){addStudent(r[0]);S.students[S.students.length-1].marks=r[1]});
+  $('card').hidden=true;toast('Loaded 8 sample students.');render();save();
+};
+$('csv').onclick=function(){
+  var L=[['ID','Name'].concat(S.subjects,['Total','Average','Grade','Status','Rank']).join(',')],rows=S.students.map(calc),done=[];
+  rows.forEach(function(c,i){if(c.done)done.push(c.total)});
+  S.students.forEach(function(st,i){
+    var c=rows[i],rk=c.done?done.filter(function(t){return t>c.total}).length+1:'';
+    L.push(['"'+st.id+'"','"'+st.name.replace(/"/g,'""')+'"'].concat(st.marks.map(function(v){return v==null?'':v}),[c.n?c.total:'',c.avg===null?'':c.avg.toFixed(2),c.avg===null?'':grade(c.avg),c.done?(c.avg>=50?'Pass':'Fail'):'Incomplete',rk]).join(','));
+  });
+  var txt=L.join('\n');
+  try{navigator.clipboard.writeText(txt).then(function(){toast('CSV copied. Paste it into a spreadsheet.')},function(){toast('Copy was blocked by the browser.')})}catch(e){toast('Copy was blocked by the browser.')}
+};
+var armed=false;
+$('reset').onclick=function(){
+  if(!armed){armed=true;this.textContent='Click again to clear all';var b=this;setTimeout(function(){armed=false;b.textContent='Clear all'},3000);return}
+  S={subjects:['Math','English','Science','History','ICT'],students:[],next:1};armed=false;this.textContent='Clear all';$('card').hidden=true;toast('All data cleared.');render();save();
+};
+load();render();
+})();
+</script>
+</body>
+</html>
