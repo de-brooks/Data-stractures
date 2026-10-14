@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Arrays in Practice: Student Result Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f5;--grid:#d6dee6;--surface:#fff;--ink:#16253b;--muted:#5a6b80;--line:#c4cfdb;--pass:#13805a;--fail:#c8283f;--mark:#ffe14d;--code:#111c2d;--codeink:#e6edf6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1623;--grid:#192536;--surface:#152133;--ink:#e8eef6;--muted:#9bacc0;--line:#2b3b52;--pass:#3ccf98;--fail:#ff6b7f;--mark:#c9a800;--code:#0a111c}}
+:root[data-theme="dark"]{--bg:#0e1623;--grid:#192536;--surface:#152133;--ink:#e8eef6;--muted:#9bacc0;--line:#2b3b52;--pass:#3ccf98;--fail:#ff6b7f;--mark:#c9a800;--code:#0a111c}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 "Source Sans 3",system-ui,sans-serif;
+background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px}
+.wrap{max-width:960px;margin:0 auto;padding:0 18px}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.15;margin:0}
+h1{font-size:clamp(2rem,6vw,3.4rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:700;margin-bottom:10px}
+h3{font-size:1.1rem;font-weight:700;margin-bottom:4px}
+header{padding:44px 0 20px}
+header p{max-width:60ch;color:var(--muted);margin:12px 0 0;font-size:1.1rem}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+nav a{color:var(--ink);text-decoration:none;border:1px solid var(--line);background:var(--surface);padding:6px 14px;border-radius:99px;font-weight:600;font-size:.95rem}
+nav a:hover{background:var(--mark);color:#16253b}
+section{padding:30px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px}
+.lead{max-width:62ch;color:var(--muted);margin:0 0 18px}
+/* array cells */
+.cells{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.cell{display:flex;flex-direction:column;align-items:stretch;border:2px solid var(--ink);border-radius:6px;background:var(--surface);overflow:hidden;transition:background .2s,transform .2s}
+.cell .idx{font:600 .72rem "JetBrains Mono",monospace;padding:3px 6px;background:var(--ink);color:var(--bg);text-align:center;white-space:nowrap}
+.cell input{width:100%;border:0;background:transparent;color:var(--ink);font:700 1.5rem "Bricolage Grotesque",sans-serif;text-align:center;padding:10px 2px;outline:none;min-width:0}
+.cell:focus-within{outline:3px solid var(--mark);outline-offset:2px}
+.cell[data-bad="1"]{border-color:var(--fail)}
+.cell.scan{background:var(--mark);transform:translateY(-4px)}
+.cell.scan input{color:#16253b}
+.bar{height:56px;display:flex;align-items:flex-end;border-top:1px dashed var(--line);position:relative}
+.bar i{display:block;width:100%;background:var(--pass);height:0;transition:height .3s}
+.bar i.f{background:var(--fail)}
+.bar::after{content:"";position:absolute;left:0;right:0;bottom:50%;border-top:1px dotted var(--muted)}
+.hint{font-size:.85rem;color:var(--muted);margin:8px 0 0}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
+button{font:600 .95rem "Source Sans 3",sans-serif;padding:9px 16px;border-radius:7px;border:2px solid var(--ink);background:var(--surface);color:var(--ink);cursor:pointer}
+button.primary{background:var(--ink);color:var(--bg)}
+button:hover:not(:disabled){background:var(--mark);color:#16253b;border-color:#16253b}
+button:focus-visible,a:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+#msg{min-height:1.6em;margin:12px 0 0;font-weight:600}
+#msg.err{color:var(--fail)}
+.res{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+@media (max-width:640px){.res{grid-template-columns:1fr}.cell input{font-size:1.15rem}.cell .idx{font-size:.6rem}}
+table{width:100%;border-collapse:collapse}
+td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+.p{color:var(--pass);font-weight:700}.f{color:var(--fail);font-weight:700}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stats div{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.stats b{display:block;font:800 1.7rem "Bricolage Grotesque",sans-serif}
+.stats span{font-size:.85rem;color:var(--muted)}
+pre{margin:0;overflow-x:auto;font:400 .88rem/1.55 "JetBrains Mono",monospace}
+.term{background:var(--code);color:var(--codeink);border-radius:8px;padding:14px;margin-top:14px}
+.trace{font:400 .9rem "JetBrains Mono",monospace;color:var(--muted);margin:10px 0 0;min-height:1.5em;overflow-wrap:anywhere}
+/* content */
+.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:0;padding:0;list-style:none}
+.apps li{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--ink);border-radius:8px;padding:14px 16px}
+.apps li p{margin:0;color:var(--muted);font-size:.97rem}
+.why{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}
+.why .card p{margin:0;color:var(--muted);font-size:.97rem}
+.pick{border:2px solid var(--ink);background:var(--surface);border-radius:10px;padding:20px;margin-top:18px}
+.pick mark{background:var(--mark);color:#16253b;padding:0 4px}
+/* code */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:-2px;position:relative}
+.tabs button{border-radius:8px 8px 0 0;border-bottom:0}
+.tabs button[aria-selected="true"]{background:var(--code);color:var(--codeink)}
+.codebox{background:var(--code);color:var(--codeink);border:2px solid var(--code);border-radius:0 8px 8px 8px;padding:16px;position:relative}
+.codebox .copy{position:absolute;top:8px;right:8px;font-size:.8rem;padding:4px 10px;background:transparent;color:var(--codeink);border-color:#5a6b80}
+.badge{display:inline-block;font-size:.8rem;font-weight:600;background:var(--mark);color:#16253b;padding:2px 10px;border-radius:99px;margin:0 0 10px}
+.k{color:#7cc4ff}.c{color:#7f93ab}
+footer{padding:30px 0 50px;color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Arrays in practice:<br>a student result system</h1>
+  <p>Five marks, one array, one set of results. Type into the array below to run the program in your browser, then read why arrays suit this job and see the code in C++, Python, JavaScript and Java.</p>
+  <nav aria-label="Sections"><a href="#try">Try it</a><a href="#why">Why arrays</a><a href="#code">Code</a></nav>
+</header>
+
+<section id="try" aria-labelledby="t1">
+  <h2 id="t1">Run the program</h2>
+  <p class="lead">Each box is one element of <code>marks[5]</code>. Enter whole numbers from 0 to 100, exactly as the C++ program accepts them.</p>
+  <div class="card">
+    <div class="cells" id="cells"></div>
+    <p class="hint">Dotted line on each bar is the pass mark (50).</p>
+    <div class="btns">
+      <button class="primary" id="walk">Walk through the loop</button>
+      <button id="rand">Random marks</button>
+      <button id="clear">Clear</button>
+    </div>
+    <p id="msg" role="status" aria-live="polite"></p>
+    <p class="trace" id="trace" aria-live="polite"></p>
+    <div class="res" id="res" hidden>
+      <table aria-label="Student results"><thead><tr><th>Student</th><th>Mark</th><th>Result</th></tr></thead><tbody id="rows"></tbody></table>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="term"><pre id="out">Waiting for five valid marks…</pre></div>
+  </div>
+</section>
+
+<section id="why" aria-labelledby="t2">
+  <h2 id="t2">Where arrays are used in the real world</h2>
+  <p class="lead">Any time a program holds many values of the same kind and must visit them in order, an array is the first tool to reach for.</p>
+  <ul class="apps">
+    <li><h3>Student records</h3><p>Marks, attendance and fees for a class, processed together for totals and rankings.</p></li>
+    <li><h3>Weather and sensor logs</h3><p>Hourly temperature readings stored in sequence to find highs, lows and trends.</p></li>
+    <li><h3>Images and video</h3><p>A picture is a grid of pixel values; filters loop over every element.</p></li>
+    <li><h3>Audio</h3><p>Sound is thousands of samples per second, stored and played back in order.</p></li>
+    <li><h3>Spreadsheets and tables</h3><p>Rows and columns map to a two-dimensional array.</p></li>
+    <li><h3>Games and boards</h3><p>Chess, tic-tac-toe and inventories track the state of every square or slot.</p></li>
+  </ul>
+  <h2 style="margin-top:28px">Why arrays are necessary</h2>
+  <div class="why">
+    <div class="card"><h3>One name, many values</h3><p>Declaring <code>marks[5]</code> replaces five separate variables and scales to five hundred.</p></div>
+    <div class="card"><h3>Fast access by index</h3><p>Elements sit side by side in memory, so <code>marks[3]</code> is found directly, without searching.</p></div>
+    <div class="card"><h3>Loops fit naturally</h3><p>A single <code>for</code> loop can total, compare and print every element.</p></div>
+    <div class="card"><h3>Predictable memory</h3><p>The size is fixed up front, so storage is compact and easy to reason about.</p></div>
+  </div>
+  <div class="pick">
+    <h3>Chosen application: <mark>Student Result Management System</mark></h3>
+    <p style="margin:6px 0 0">The program stores the marks of 5 students in one integer array, validates each entry, then finds the total, average, highest and lowest marks and labels each student Pass (50 or above) or Fail. Without an array it would need a separate variable for every student and repeated code for each one.</p>
+  </div>
+</section>
+
+<section id="code" aria-labelledby="t3">
+  <h2 id="t3">The code</h2>
+  <p class="lead">The C++ tab holds your original program, untouched. The other tabs are equivalent versions of the same logic.</p>
+  <div class="tabs" role="tablist" aria-label="Language">
+    <button role="tab" aria-selected="true" data-t="cpp">C++</button>
+    <button role="tab" aria-selected="false" data-t="py">Python</button>
+    <button role="tab" aria-selected="false" data-t="js">JavaScript</button>
+    <button role="tab" aria-selected="false" data-t="java">Java</button>
+  </div>
+  <div class="codebox">
+    <button class="copy" id="copy">Copy</button>
+    <div id="p-cpp"><span class="badge">Original, unchanged</span>
+<pre>#include &lt;iostream&gt;
+#include &lt;iomanip&gt;
+using namespace std;
+
+int main() {
+    const int SIZE = 5;
+    int marks[SIZE];
+    int total = 0;
+    int highest, lowest;
+    double average;
+
+    cout &lt;&lt; "STUDENT RESULT MANAGEMENT SYSTEM\n";
+    cout &lt;&lt; "Enter marks for " &lt;&lt; SIZE &lt;&lt; " students (0-100).\n\n";
+
+    // Input and validate students' marks
+    for (int i = 0; i &lt; SIZE; i++) {
+        cout &lt;&lt; "Enter mark for student " &lt;&lt; i + 1 &lt;&lt; ": ";
+        cin &gt;&gt; marks[i];
+
+        while (cin.fail() || marks[i] &lt; 0 || marks[i] &gt; 100) {
+            cin.clear();
+            cin.ignore(10000, '\\n');
+            cout &lt;&lt; "Invalid input. Enter a whole number from 0 to 100: ";
+            cin &gt;&gt; marks[i];
+        }
+    }
+
+    // Initialize highest and lowest using the first array element
+    highest = marks[0];
+    lowest = marks[0];
+
+    // Process the array
+    for (int i = 0; i &lt; SIZE; i++) {
+        total += marks[i];
+
+        if (marks[i] &gt; highest) {
+            highest = marks[i];
+        }
+
+        if (marks[i] &lt; lowest) {
+            lowest = marks[i];
+        }
+    }
+
+    average = static_cast&lt;double&gt;(total) / SIZE;
+
+    // Display individual results
+    cout &lt;&lt; "\n--- STUDENT RESULTS ---\n";
+    for (int i = 0; i &lt; SIZE; i++) {
+        cout &lt;&lt; "Student " &lt;&lt; i + 1 &lt;&lt; ": " &lt;&lt; marks[i] &lt;&lt; " - "
+             &lt;&lt; (marks[i] &gt;= 50 ? "Pass" : "Fail") &lt;&lt; '\n';
+    }
+
+    // Display summary
+    cout &lt;&lt; fixed &lt;&lt; setprecision(2);
+    cout &lt;&lt; "\nTotal marks: " &lt;&lt; total &lt;&lt; '\n';
+    cout &lt;&lt; "Average mark: " &lt;&lt; average &lt;&lt; '\n';
+    cout &lt;&lt; "Highest mark: " &lt;&lt; highest &lt;&lt; '\n';
+    cout &lt;&lt; "Lowest mark: " &lt;&lt; lowest &lt;&lt; '\n';
+
+    return 0;
+}
+</pre></div>
+    <div id="p-py" hidden><pre>SIZE = 5
+marks = []
+
+print("STUDENT RESULT MANAGEMENT SYSTEM")
+print(f"Enter marks for {SIZE} students (0-100).\n")
+
+# Input and validate students' marks
+for i in range(SIZE):
+    text = input(f"Enter mark for student {i + 1}: ")
+    while not (text.isdigit() and 0 &lt;= int(text) &lt;= 100):
+        text = input("Invalid input. Enter a whole number from 0 to 100: ")
+    marks.append(int(text))
+
+# Process the list
+total = sum(marks)
+highest = max(marks)
+lowest = min(marks)
+average = total / SIZE
+
+print("\n--- STUDENT RESULTS ---")
+for i, m in enumerate(marks):
+    print(f"Student {i + 1}: {m} - {'Pass' if m &gt;= 50 else 'Fail'}")
+
+print(f"\nTotal marks: {total}")
+print(f"Average mark: {average:.2f}")
+print(f"Highest mark: {highest}")
+print(f"Lowest mark: {lowest}")
+</pre></div>
+    <div id="p-js" hidden><pre>// Run with Node.js: node results.js
+const readline = require("readline/promises");
+const SIZE = 5;
+
+async function main() {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const marks = new Array(SIZE);
+
+  console.log("STUDENT RESULT MANAGEMENT SYSTEM");
+  console.log(`Enter marks for ${SIZE} students (0-100).\n`);
+
+  for (let i = 0; i &lt; SIZE; i++) {
+    let text = await rl.question(`Enter mark for student ${i + 1}: `);
+    while (!/^\d+$/.test(text.trim()) || +text &gt; 100) {
+      text = await rl.question("Invalid input. Enter a whole number from 0 to 100: ");
+    }
+    marks[i] = Number(text);
+  }
+  rl.close();
+
+  let total = 0, highest = marks[0], lowest = marks[0];
+  for (const m of marks) {
+    total += m;
+    if (m &gt; highest) highest = m;
+    if (m &lt; lowest) lowest = m;
+  }
+  const average = total / SIZE;
+
+  console.log("\n--- STUDENT RESULTS ---");
+  marks.forEach((m, i) =&gt; console.log(`Student ${i + 1}: ${m} - ${m &gt;= 50 ? "Pass" : "Fail"}`));
+
+  console.log(`\nTotal marks: ${total}`);
+  console.log(`Average mark: ${average.toFixed(2)}`);
+  console.log(`Highest mark: ${highest}`);
+  console.log(`Lowest mark: ${lowest}`);
+}
+main();
+</pre></div>
+    <div id="p-java" hidden><pre>import java.util.Scanner;
+
+public class StudentResults {
+    public static void main(String[] args) {
+        final int SIZE = 5;
+        int[] marks = new int[SIZE];
+        int total = 0;
+        Scanner in = new Scanner(System.in);
+
+        System.out.println("STUDENT RESULT MANAGEMENT SYSTEM");
+        System.out.println("Enter marks for " + SIZE + " students (0-100).\n");
+
+        for (int i = 0; i &lt; SIZE; i++) {
+            System.out.print("Enter mark for student " + (i + 1) + ": ");
+            while (true) {
+                if (in.hasNextInt()) {
+                    marks[i] = in.nextInt();
+                    if (marks[i] &gt;= 0 &amp;&amp; marks[i] &lt;= 100) break;
+                } else {
+                    in.next();
+                }
+                System.out.print("Invalid input. Enter a whole number from 0 to 100: ");
+            }
+        }
+
+        int highest = marks[0], lowest = marks[0];
+        for (int m : marks) {
+            total += m;
+            if (m &gt; highest) highest = m;
+            if (m &lt; lowest) lowest = m;
+        }
+        double average = (double) total / SIZE;
+
+        System.out.println("\n--- STUDENT RESULTS ---");
+        for (int i = 0; i &lt; SIZE; i++) {
+            System.out.println("Student " + (i + 1) + ": " + marks[i] + " - "
+                + (marks[i] &gt;= 50 ? "Pass" : "Fail"));
+        }
+
+        System.out.println("\nTotal marks: " + total);
+        System.out.printf("Average mark: %.2f%n", average);
+        System.out.println("Highest mark: " + highest);
+        System.out.println("Lowest mark: " + lowest);
+    }
+}
+</pre></div>
+  </div>
+</section>
+<footer>The simulator above follows the same steps as the C++ program: validate, scan for total, highest and lowest, then report.</footer>
+</div>
+
+<script>
+(function(){
+var N=5,cells=document.getElementById('cells'),inputs=[],bars=[],cellEls=[];
+var msg=document.getElementById('msg'),trace=document.getElementById('trace'),res=document.getElementById('res'),out=document.getElementById('out');
+for(var i=0;i<N;i++){
+  var c=document.createElement('label');c.className='cell';
+  c.innerHTML='<span class="idx">marks['+i+']</span><input type="text" inputmode="numeric" maxlength="3" autocomplete="off" aria-label="Mark for student '+(i+1)+'" placeholder="–"><div class="bar"><i></i></div>';
+  cells.appendChild(c);cellEls.push(c);inputs.push(c.querySelector('input'));bars.push(c.querySelector('i'));
+  inputs[i].addEventListener('input',update);
+}
+function parse(v){v=v.trim();return /^\d+$/.test(v)&&+v<=100?+v:null}
+function update(){
+  var m=[],bad=false,empty=0;
+  inputs.forEach(function(inp,i){
+    var v=inp.value.trim(),p=v===''?null:parse(v);
+    cellEls[i].dataset.bad=(v!==''&&p===null)?'1':'0';
+    if(v==='')empty++;else if(p===null)bad=true;
+    bars[i].style.height=(p===null?0:p*0.56)+'px';bars[i].className=p!==null&&p<50?'f':'';
+    m.push(p);
+  });
+  trace.textContent='';
+  if(bad){msg.className='err';msg.textContent='Invalid input. Enter a whole number from 0 to 100.';res.hidden=true;out.textContent='Waiting for five valid marks…';return}
+  msg.className='';
+  if(empty){msg.textContent=empty+' of '+N+' marks still to enter.';res.hidden=true;out.textContent='Waiting for five valid marks…';return}
+  msg.textContent='';show(m);
+}
+function stats(m){
+  var t=0,h=m[0],l=m[0];
+  for(var i=0;i<N;i++){t+=m[i];if(m[i]>h)h=m[i];if(m[i]<l)l=m[i]}
+  return{t:t,h:h,l:l,a:t/N};
+}
+function show(m){
+  var s=stats(m),rows='',txt='--- STUDENT RESULTS ---\n';
+  m.forEach(function(v,i){
+    var ok=v>=50;rows+='<tr><td>Student '+(i+1)+'</td><td>'+v+'</td><td class="'+(ok?'p':'f')+'">'+(ok?'Pass':'Fail')+'</td></tr>';
+    txt+='Student '+(i+1)+': '+v+' - '+(ok?'Pass':'Fail')+'\n';
+  });
+  document.getElementById('rows').innerHTML=rows;
+  document.getElementById('stats').innerHTML=[['Total',s.t],['Average',s.a.toFixed(2)],['Highest',s.h],['Lowest',s.l]].map(function(x){return '<div><b>'+x[1]+'</b><span>'+x[0]+'</span></div>'}).join('');
+  txt+='\nTotal marks: '+s.t+'\nAverage mark: '+s.a.toFixed(2)+'\nHighest mark: '+s.h+'\nLowest mark: '+s.l;
+  out.textContent=txt;res.hidden=false;
+}
+function vals(){return inputs.map(function(i){return parse(i.value)})}
+function ready(){var v=vals();if(v.some(function(x){return x===null})){msg.className='err';msg.textContent='Enter five valid marks (0 to 100) first, or press Random marks.';return null}return v}
+document.getElementById('rand').onclick=function(){inputs.forEach(function(i){i.value=Math.floor(Math.random()*101)});update()};
+document.getElementById('clear').onclick=function(){inputs.forEach(function(i){i.value=''});update();inputs[0].focus()};
+var walkBtn=document.getElementById('walk');
+walkBtn.onclick=function(){
+  var m=ready();if(!m)return;
+  walkBtn.disabled=true;var i=0,t=0,h=m[0],l=m[0];
+  trace.textContent='highest = lowest = marks[0] = '+m[0];
+  (function step(){
+    cellEls.forEach(function(c){c.classList.remove('scan')});
+    if(i>=N){var s=stats(m);trace.textContent='Done. total = '+s.t+', average = '+s.t+' / '+N+' = '+s.a.toFixed(2)+', highest = '+s.h+', lowest = '+s.l;walkBtn.disabled=false;return}
+    cellEls[i].classList.add('scan');
+    t+=m[i];var note='';
+    if(m[i]>h){h=m[i];note+=' new highest';}
+    if(m[i]<l){l=m[i];note+=' new lowest';}
+    trace.textContent='i = '+i+': marks['+i+'] = '+m[i]+'  total = '+t+'  highest = '+h+'  lowest = '+l+(note?'  ('+note.trim()+')':'');
+    i++;setTimeout(step,1000);
+  })();
+};
+/* tabs */
+var tabs=document.querySelectorAll('[role=tab]'),cur='cpp';
+tabs.forEach(function(b){b.onclick=function(){
+  cur=b.dataset.t;
+  tabs.forEach(function(x){x.setAttribute('aria-selected',x===b);document.getElementById('p-'+x.dataset.t).hidden=x!==b});
+}});
+document.getElementById('copy').onclick=function(){
+  var btn=this,txt=document.querySelector('#p-'+cur+' pre').textContent;
+  function ok(){btn.textContent='Copied';setTimeout(function(){btn.textContent='Copy'},1500)}
+  try{navigator.clipboard.writeText(txt).then(ok,fallback)}catch(e){fallback()}
+  function fallback(){var r=document.createRange();r.selectNodeContents(document.querySelector('#p-'+cur+' pre'));var s=getSelection();s.removeAllRanges();s.addRange(r);btn.textContent='Selected, press copy';setTimeout(function(){btn.textContent='Copy'},2000)}
+};
+})();
+</script>
+</body>
+</html>
